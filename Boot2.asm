@@ -41,10 +41,11 @@ load_kernel: ;読み込み先のカーネルをロード
     call enable_a20_fast
     
     mov ax, 0x1000
-    mov es,ax
+    ;mov ax, 0x10
+    mov es, ax
     ;xor bx, bx
-
     mov bx, 0x0000
+    mov bx, 0
     mov ah, 0x02
     mov al, 1
     mov ch, 0
@@ -53,6 +54,12 @@ load_kernel: ;読み込み先のカーネルをロード
     mov dl ,0x80
     int 0x13
     jc disk_error
+
+    mov ah, 0x02    ; カーソル位置設定
+    mov bh, 0x00    ; ページ番号（通常0）
+    mov dh, 0x00    ; 行（Y座標）
+    mov dl, 0x00    ; 列（X座標）
+    int 0x10        ; BIOSビデオサービス呼び出し
 
     jmp setup_32bit_mode
 
@@ -77,6 +84,7 @@ setup_32bit_mode:
     mov eax, cr0
     or eax, 1
     mov cr0, eax
+
     jmp 0x08:protected_mod_start
 
 gdt_start:;GDTの範囲指定
@@ -103,6 +111,19 @@ protected_mod_start:
     mov esp, 0x9fc00
     mov ebp, esp
 
+    ; カーネルを0x10000→0x00100000へコピー
+    mov esi, 0x10000      ; コピー元
+    ;mov esi, 0x1000      ; コピー元
+    mov edi, 0x00100000   ; コピー先
+    mov ecx, 1 * 512; セクタ数×512バイト分
+    rep movsb
+    
+;copy_kernel:
+;    mov al, [esi]
+;    mov [edi], al
+;    inc esi
+;    inc edi
+;    loop copy_kernel
 
     VGA_ADDR equ 0xB8000 + (10 * 160)
     mov edi,VGA_ADDR      ; VGAメモリ
@@ -113,7 +134,6 @@ msg_out:
     
     mov esi, bit32_msg
     mov ah, 0x0f
-
 
 .msg_out_loop:
     lodsb
@@ -242,4 +262,16 @@ isr_keyboard: ;キーボードを読み取る
 
 kernel: ;カーネル実装予定の場所
     mov eax, 0x00100000
+    
+    ;hlt
+    ;jmp $
+    ;call eax
     jmp eax
+    ;jmp 0x00100000
+    ;jmp 0x00100000
+    ;jmp $
+    cli
+    hlt
+    ;times 2556-($-$$) db 0
+    ;times 512*5-($-$$) db 0
+    times 512 * 6 - 4 -($-$$) db 0

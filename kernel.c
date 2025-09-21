@@ -1,12 +1,10 @@
 #include "stdio.h"
 
-void kernel_main(void) {
-    vk_puts("helloworld");
-}
+__attribute__((section(".text.start")))
 
-// void _kernel_main(void){
-//     volatile unsigned char* vga = (volatile unsigned char*)0xB8000;
-//     vga[0] = 'H';
-//     vga[1] = 0x07;  // 白文字・黒背景
-//     while(1);        // CPU停止
-// }
+void _kernel_main(void){
+    clean_screen();
+    vk_puts("C language kernel!\n");
+    vk_puts("hello world!\n");
+    while(1);
+}
